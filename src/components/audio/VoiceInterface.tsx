@@ -28,7 +28,7 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
     const average = sum / dataArray.length;
     
     // Map the volume (0-128) to mouth values (10-200)
-    const mouthValue = 10 + (average * 1.5);
+    const mouthValue = 10 + (average * 2);
     const clampedValue = Math.min(200, Math.max(10, mouthValue));
     
     // Update Spline mouth variable
