@@ -8,7 +8,7 @@ export default function TarotSpread() {
 
   return (
     <div className="fixed bottom-32 left-1/2 -translate-x-1/2">
-      <div className="flex gap-6 items-center justify-center">
+      <div className="flex gap-4 items-center justify-center">
         {cards.map((card, index) => (
           <div
             key={`${card.name}-${index}`}

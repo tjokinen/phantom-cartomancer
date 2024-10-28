@@ -2,6 +2,7 @@
 
 import { TAROT_CARDS } from '@/lib/tarot/cards';
 import Image from 'next/image';
+import { useState } from 'react';
 
 interface TarotCardProps {
   name: string;
@@ -11,6 +12,7 @@ interface TarotCardProps {
 }
 
 export default function TarotCard({ name, position, isRevealed, onClick }: TarotCardProps) {
+  const [imageError, setImageError] = useState(false);
   const cardData = TAROT_CARDS[name];
 
   if (!cardData) {
@@ -21,7 +23,7 @@ export default function TarotCard({ name, position, isRevealed, onClick }: Tarot
   return (
     <div 
       className={`
-        relative w-[240px] h-[420px] 
+        relative w-[160px] h-[280px]
         transition-all duration-700 ease-in-out cursor-pointer
         hover:scale-105
         ${isRevealed ? 'rotate-0' : 'rotate-180'}
@@ -40,13 +42,17 @@ export default function TarotCard({ name, position, isRevealed, onClick }: Tarot
             alt={`${cardData.name} ${position}`}
             fill
             className="object-cover"
-            sizes="240px"
+            sizes="160px"
             priority
+            onError={(e) => {
+              console.error(`Failed to load image: ${cardData.image}`);
+              setImageError(true);
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/50" />
-          <div className="absolute bottom-4 left-4 right-4 text-white text-sm font-medium">
-            <h3 className="text-lg mb-1">{cardData.name}</h3>
-            <p className="opacity-75 text-xs">{cardData.description}</p>
+          <div className="absolute bottom-3 left-3 right-3 text-white">
+            <h3 className="text-base mb-0.5">{cardData.name}</h3>
+            <p className="opacity-75 text-[10px]">{cardData.description}</p>
           </div>
         </div>
         <div className={`
@@ -55,7 +61,7 @@ export default function TarotCard({ name, position, isRevealed, onClick }: Tarot
           ${isRevealed ? 'opacity-0' : 'opacity-100'}
         `}>
           <div className="absolute inset-0 bg-indigo-900 bg-opacity-90">
-            <div className="absolute inset-0 bg-[url('/cards/card-back.jpg')] bg-cover bg-center opacity-90" />
+            <div className="absolute inset-0 bg-[url('/cards/card-back.png')] bg-cover bg-center opacity-90" />
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20" />
           </div>
         </div>
