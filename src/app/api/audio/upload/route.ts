@@ -57,11 +57,15 @@ export async function POST(req: Request) {
 
     console.log('Speech generated');
 
+    // Convert the audio buffer to base64
+    const audioBuffer = await speech.arrayBuffer();
+    const audioBase64 = Buffer.from(audioBuffer).toString('base64');
+
     return new Response(JSON.stringify({
       type: 'completion',
       transcription: transcription.text,
       response: completion.choices[0].message.content,
-      audio: await speech.arrayBuffer()
+      audio: audioBase64
     }), {
       headers: {
         'Content-Type': 'application/json',

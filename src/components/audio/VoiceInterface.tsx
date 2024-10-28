@@ -1,13 +1,70 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Application } from '@splinetool/runtime';
 
-export default function VoiceInterface() {
+interface VoiceInterfaceProps {
+  splineApp: Application | null;
+}
+
+export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number>();
+
+  const updateMouth = (analyser: AnalyserNode) => {
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(dataArray);
+
+    // Calculate average volume
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += Math.abs(dataArray[i] - 128);
+    }
+    const average = sum / dataArray.length;
+    
+    // Map the volume (0-128) to mouth values (10-200)
+    const mouthValue = 10 + (average * 1.5);
+    const clampedValue = Math.min(200, Math.max(10, mouthValue));
+    
+    // Update Spline mouth variable
+    if (splineApp) {
+      splineApp.setVariable('mouth', clampedValue);
+    }
+
+    // Continue animation loop
+    animationFrameRef.current = requestAnimationFrame(() => updateMouth(analyser));
+  };
+
+  const startMouthAnimation = (source: AudioBufferSourceNode) => {
+    if (!audioContextRef.current) return;
+
+    // Create analyser node if it doesn't exist
+    if (!analyserRef.current) {
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+    }
+
+    // Connect source to analyser
+    source.connect(analyserRef.current);
+    
+    // Start animation loop
+    updateMouth(analyserRef.current);
+
+    // Clean up when audio ends
+    source.onended = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (splineApp) {
+        splineApp.setVariable('mouth', 10); // Close mouth
+      }
+    };
+  };
 
   const startListening = async () => {
     try {
@@ -71,11 +128,26 @@ export default function VoiceInterface() {
           console.log('Server response:', data);
 
           if (data.audio) {
-            const audioBuffer = await audioContextRef.current!.decodeAudioData(data.audio);
+            // Convert base64 back to ArrayBuffer
+            const binaryString = window.atob(data.audio);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            const audioBuffer = await audioContextRef.current!.decodeAudioData(bytes.buffer);
+            
+            // Create and set up audio source
             const source = audioContextRef.current!.createBufferSource();
             source.buffer = audioBuffer;
             source.connect(audioContextRef.current!.destination);
+            
+            // Start mouth animation
+            startMouthAnimation(source);
+            
+            // Play the audio
             source.start();
+
+            console.log('Playing response:', data.response);
           }
         } catch (error) {
           console.error('Detailed error processing audio:', error);
@@ -142,8 +214,12 @@ export default function VoiceInterface() {
     }
   };
 
+  // Clean up on unmount
   useEffect(() => {
     return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
       stopListening();
     };
   }, []);
