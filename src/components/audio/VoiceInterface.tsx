@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Application } from '@splinetool/runtime';
+import { useTarot } from '@/lib/context/TarotContext';
 
 interface VoiceInterfaceProps {
   splineApp: Application | null;
@@ -15,63 +16,65 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
   const chunksRef = useRef<Blob[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number>();
+  const { addCard, revealCard, clearCards } = useTarot();
+  const currentAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+  // Initialize AudioContext on component mount
+  useEffect(() => {
+    audioContextRef.current = new AudioContext();
+    analyserRef.current = audioContextRef.current.createAnalyser();
+    analyserRef.current.fftSize = 256;
+
+    return () => {
+      if (audioContextRef.current?.state !== 'closed') {
+        audioContextRef.current?.close();
+      }
+    };
+  }, []);
 
   const updateMouth = (analyser: AnalyserNode) => {
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteTimeDomainData(dataArray);
 
-    // Calculate average volume
     let sum = 0;
     for (let i = 0; i < dataArray.length; i++) {
       sum += Math.abs(dataArray[i] - 128);
     }
     const average = sum / dataArray.length;
     
-    // Map the volume (0-128) to mouth values (10-200)
-    const mouthValue = 10 + (average * 2);
+    const mouthValue = 10 + (average * 1.5);
     const clampedValue = Math.min(200, Math.max(10, mouthValue));
     
-    // Update Spline mouth variable
     if (splineApp) {
       splineApp.setVariable('mouth', clampedValue);
     }
 
-    // Continue animation loop
     animationFrameRef.current = requestAnimationFrame(() => updateMouth(analyser));
   };
 
-  const startMouthAnimation = (source: AudioBufferSourceNode) => {
-    if (!audioContextRef.current) return;
-
-    // Create analyser node if it doesn't exist
-    if (!analyserRef.current) {
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
+  const stopCurrentAudio = () => {
+    if (currentAudioSourceRef.current) {
+      currentAudioSourceRef.current.stop();
+      currentAudioSourceRef.current.disconnect();
+      currentAudioSourceRef.current = null;
     }
-
-    // Connect source to analyser
-    source.connect(analyserRef.current);
-    
-    // Start animation loop
-    updateMouth(analyserRef.current);
-
-    // Clean up when audio ends
-    source.onended = () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (splineApp) {
-        splineApp.setVariable('mouth', 10); // Close mouth
-      }
-    };
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (splineApp) {
+      splineApp.setVariable('mouth', 10); // Reset mouth to closed position
+    }
   };
 
   const startListening = async () => {
     try {
-      // Initialize audio context
-      audioContextRef.current = new AudioContext();
+      // Stop any playing audio first
+      stopCurrentAudio();
+
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
       
-      // Get microphone stream
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
@@ -79,40 +82,26 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
         } 
       });
       
-      // Clear previous chunks
       chunksRef.current = [];
 
-      // Set up MediaRecorder with audio stream
       mediaRecorderRef.current = new MediaRecorder(stream, {
         mimeType: 'audio/webm',
         audioBitsPerSecond: 128000
       });
 
-      // Handle audio data chunks
       mediaRecorderRef.current.ondataavailable = async (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
-      // Handle recording stop
       mediaRecorderRef.current.onstop = async () => {
         try {
-          // Combine all chunks into a single blob
           const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-          
-          // Convert webm to mp3
-          const arrayBuffer = await audioBlob.arrayBuffer();
-          const audioContext = new AudioContext();
-          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-          
-          // Create WAV blob
-          const wavBlob = await convertToWav(audioBuffer);
-          
-          console.log('Sending audio file, size:', wavBlob.size);
+          const audioFile = new File([audioBlob], 'audio.wav', { type: 'audio/webm' });
           
           const formData = new FormData();
-          formData.append('audio', wavBlob, 'audio.wav');
+          formData.append('audio', audioFile);
           
           const response = await fetch('/api/audio/upload', {
             method: 'POST',
@@ -120,34 +109,29 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
           });
           
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Server error: ${errorData.error || response.statusText}`);
+            throw new Error(`Server error: ${response.statusText}`);
           }
 
           const data = await response.json();
           console.log('Server response:', data);
 
-          if (data.audio) {
-            // Convert base64 back to ArrayBuffer
+          if (data.functionCalls) {
+            handleFunctionCalls(data.functionCalls);
+          }
+
+          if (data.audio && audioContextRef.current) {
             const binaryString = window.atob(data.audio);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
               bytes[i] = binaryString.charCodeAt(i);
             }
-            const audioBuffer = await audioContextRef.current!.decodeAudioData(bytes.buffer);
             
-            // Create and set up audio source
-            const source = audioContextRef.current!.createBufferSource();
+            const audioBuffer = await audioContextRef.current.decodeAudioData(bytes.buffer);
+            const source = audioContextRef.current.createBufferSource();
             source.buffer = audioBuffer;
-            source.connect(audioContextRef.current!.destination);
             
-            // Start mouth animation
             startMouthAnimation(source);
-            
-            // Play the audio
             source.start();
-
-            console.log('Playing response:', data.response);
           }
         } catch (error) {
           console.error('Detailed error processing audio:', error);
@@ -155,7 +139,7 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
         }
       };
 
-      mediaRecorderRef.current.start(1000); // Collect chunks every second
+      mediaRecorderRef.current.start(1000);
       setIsListening(true);
     } catch (err) {
       console.error('Error starting audio:', err);
@@ -164,63 +148,71 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
   };
 
   const stopListening = () => {
+    stopCurrentAudio();
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
     setIsListening(false);
   };
 
-  // Helper function to convert AudioBuffer to WAV
-  const convertToWav = async (audioBuffer: AudioBuffer): Promise<Blob> => {
-    const numOfChannels = audioBuffer.numberOfChannels;
-    const length = audioBuffer.length * numOfChannels * 2;
-    const buffer = new ArrayBuffer(44 + length);
-    const view = new DataView(buffer);
-    
-    // Write WAV header
-    writeUTFBytes(view, 0, 'RIFF');
-    view.setUint32(4, 36 + length, true);
-    writeUTFBytes(view, 8, 'WAVE');
-    writeUTFBytes(view, 12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, numOfChannels, true);
-    view.setUint32(24, audioBuffer.sampleRate, true);
-    view.setUint32(28, audioBuffer.sampleRate * 2 * numOfChannels, true);
-    view.setUint16(32, numOfChannels * 2, true);
-    view.setUint16(34, 16, true);
-    writeUTFBytes(view, 36, 'data');
-    view.setUint32(40, length, true);
+  const startMouthAnimation = (source: AudioBufferSourceNode) => {
+    if (!audioContextRef.current || !analyserRef.current) return;
 
-    // Write audio data
-    const data = new Float32Array(audioBuffer.length * numOfChannels);
-    let offset = 44;
-    for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
-      data.set(audioBuffer.getChannelData(i), audioBuffer.length * i);
-    }
-    
-    for (let i = 0; i < data.length; i++) {
-      const sample = Math.max(-1, Math.min(1, data[i]));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-      offset += 2;
-    }
+    // Store the current audio source for potential stopping
+    currentAudioSourceRef.current = source;
 
-    return new Blob([buffer], { type: 'audio/wav' });
+    // Connect source to both analyser and destination
+    source.connect(analyserRef.current);
+    analyserRef.current.connect(audioContextRef.current.destination);
+    
+    updateMouth(analyserRef.current);
+
+    source.onended = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (splineApp) {
+        splineApp.setVariable('mouth', 10);
+      }
+      // Disconnect nodes when audio ends
+      source.disconnect();
+      analyserRef.current?.disconnect();
+      currentAudioSourceRef.current = null;
+    };
   };
 
-  const writeUTFBytes = (view: DataView, offset: number, string: string) => {
-    for (let i = 0; i < string.length; i++) {
-      view.setUint8(offset + i, string.charCodeAt(i));
-    }
+  const handleFunctionCalls = (functionCalls: any[]) => {
+    functionCalls.forEach(functionCall => {
+      try {
+        const args = JSON.parse(functionCall.arguments);
+        
+        switch (functionCall.name) {
+          case 'drawCard':
+            addCard(args.cardName, args.position || 'upright');
+            break;
+          case 'revealCard':
+            revealCard(args.index);
+            break;
+          case 'clearCards':
+            clearCards();
+            break;
+        }
+      } catch (error) {
+        console.error('Error processing function call:', error);
+      }
+    });
   };
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      stopCurrentAudio();
+      if (mediaRecorderRef.current?.state === 'recording') {
+        mediaRecorderRef.current.stop();
       }
-      stopListening();
+      if (audioContextRef.current?.state !== 'closed') {
+        audioContextRef.current?.close();
+      }
     };
   }, []);
 
