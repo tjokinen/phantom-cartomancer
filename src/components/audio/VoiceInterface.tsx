@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Application } from '@splinetool/runtime';
 import { useTarot } from '@/lib/context/TarotContext';
+import { useApiKey } from '@/lib/context/ApiKeyContext';
 
 interface VoiceInterfaceProps {
   splineApp: Application | null;
@@ -27,6 +28,7 @@ export default function VoiceInterface({ splineApp, stopIntroAudio }: VoiceInter
     addMessage 
   } = useTarot();
   const currentAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const { apiKey } = useApiKey();
 
   // Initialize AudioContext on component mount
   useEffect(() => {
@@ -123,6 +125,9 @@ export default function VoiceInterface({ splineApp, stopIntroAudio }: VoiceInter
 
           const response = await fetch('/api/audio/upload', {
             method: 'POST',
+            headers: {
+              'x-api-key': apiKey
+            },
             body: formData,
           });
 

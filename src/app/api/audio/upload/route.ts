@@ -2,24 +2,25 @@ import { OpenAI } from 'openai';
 import { env } from '@/lib/env';
 import { tarotFunctions } from '@/lib/tarot/functions';
 
-const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY || '',
-});
-
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
-  if (!env.OPENAI_API_KEY) {
-    return Response.json(
-      { error: 'OpenAI API key not configured' },
-      { status: 500 }
-    );
-  }
-
   try {
     const formData = await req.formData();
     const audioBlob = formData.get('audio');
     const messagesJson = formData.get('messages');
+    const apiKey = req.headers.get('x-api-key');
+
+    if (!apiKey) {
+      return Response.json(
+        { error: 'OpenAI API key not provided' },
+        { status: 401 }
+      );
+    }
+
+    const openai = new OpenAI({
+      apiKey: apiKey,
+    });
 
     console.log('\n=== Raw Messages JSON ===');
     console.log('messagesJson:', messagesJson);
