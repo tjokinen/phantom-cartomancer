@@ -248,18 +248,118 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
   }, []);
 
   return (
-    <div className="fixed bottom-4 right-4 p-4 bg-slate-800 rounded-lg shadow-lg">
-      {error && <div className="text-red-500 mb-2">{error}</div>}
-      <button
-        onClick={isListening ? stopListening : startListening}
-        className={`px-4 py-2 rounded-full ${
-          isListening 
-            ? 'bg-red-500 hover:bg-red-600' 
-            : 'bg-blue-500 hover:bg-blue-600'
-        } text-white transition-colors`}
-      >
-        {isListening ? 'Stop Listening' : 'Start Listening'}
-      </button>
+    <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+      <div className="relative">
+        <button
+          onClick={isListening ? stopListening : startListening}
+          className={`group relative flex flex-col items-center`}
+        >
+          {/* Hover instruction - changes based on listening state */}
+          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-48 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <p className={`${isListening ? 'text-red-200/60' : 'text-purple-200/60'} text-sm italic text-center`}>
+              {isListening ? 'Click to stop recording' : 'Click to commune'}
+            </p>
+          </div>
+
+          {/* Main button circle */}
+          <div className="relative">
+            <div className={`w-16 h-16 rounded-full 
+              ${isListening 
+                ? 'bg-gradient-to-br from-red-400/30 to-red-800/50 border-red-300/30' 
+                : 'bg-gradient-to-br from-purple-400/20 to-purple-800/40 border-purple-300/30'
+              } 
+              border backdrop-blur-sm flex items-center justify-center
+              transition-all duration-300 group-hover:scale-110`}
+            >
+              {/* Recording indicator pulse */}
+              {isListening && (
+                <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
+              )}
+              
+              {/* Animated rings */}
+              <div className={`absolute inset-0 rounded-full 
+                ${isListening 
+                  ? 'border-2 border-red-300/30 animate-pulse' 
+                  : 'border-2 border-purple-300/30 animate-pulse'
+                }`} 
+              />
+              
+              {/* Down arrow for non-listening state */}
+              {!isListening && (
+                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 animate-bounce opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <svg 
+                    className="w-4 h-4 text-purple-200/70" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M19 14l-7 7m0 0l-7-7m7 7V3" 
+                    />
+                  </svg>
+                </div>
+              )}
+              
+              {/* Main icon */}
+              <svg 
+                className={`w-8 h-8 
+                  ${isListening 
+                    ? 'text-red-200/70' 
+                    : 'text-purple-200/70'
+                  } 
+                  transition-colors duration-300`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                {isListening ? (
+                  // Stop icon
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z M16 12H8"
+                  />
+                ) : (
+                  // Mystical ear/listening icon
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={1.5} 
+                    d="M12 6v12m0-12c-3.3 0-6 2.7-6 6s2.7 6 6 6m0-12c3.3 0 6 2.7 6 6s-2.7 6-6 6m-6-6h12"
+                  />
+                )}
+              </svg>
+            </div>
+          </div>
+
+          {/* Button text */}
+          <div className="flex flex-col items-center space-y-1">
+            <span className={`mt-2 font-serif text-sm 
+              ${isListening 
+                ? 'text-red-200/80' 
+                : 'text-purple-200/80'
+              } 
+              tracking-wide`}
+            >
+              {isListening ? 'Seal the Veil' : 'Speak to the Spirit'}
+            </span>
+            <span className={`text-xs italic ${isListening ? 'text-red-200/50' : 'text-purple-200/50'}`}>
+              {isListening ? 'Recording... Click to stop' : 'Press to begin'}
+            </span>
+          </div>
+        </button>
+
+        {/* Error message */}
+        {error && (
+          <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 w-48 text-center">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 } 
