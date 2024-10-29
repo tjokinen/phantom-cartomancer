@@ -6,6 +6,12 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import VoiceInterface from '@/components/audio/VoiceInterface';
 import TarotSpread from '@/components/tarot/TarotSpread';
 import { TarotProvider } from '@/lib/context/TarotContext';
+import localFont from 'next/font/local';
+
+const pirataFont = localFont({ 
+  src: './fonts/PirataOne-Regular.ttf',
+  variable: '--font-pirata'
+});
 
 export default function Home() {
   const [splineApp, setSplineApp] = useState<Application | null>(null);
@@ -76,7 +82,7 @@ export default function Home() {
     
     hasAnimated.current = true;
     const startTime = Date.now();
-    const duration = 5000;
+    const duration = 1000;
 
     const animate = () => {
       const currentTime = Date.now() - startTime;
@@ -124,6 +130,13 @@ export default function Home() {
         <TarotSpread />
         {!showStartButton && <VoiceInterface splineApp={splineApp} />}
 
+        {/* Centered title with new font */}
+        <div className="absolute top-6 left-0 right-0 text-center">
+          <h1 className={`${pirataFont.className} text-4xl text-purple-200/90 tracking-wider`}>
+            Phantom Cartomancer
+          </h1>
+        </div>
+
         {showStartButton && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
             <div 
@@ -170,11 +183,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        <div className="absolute top-4 left-4 text-foreground">
-          <h1 className="text-2xl font-bold">Phantom Cartomancer</h1>
-          <p className="text-sm opacity-70">Speak to begin your reading...</p>
-        </div>
       </main>
     </TarotProvider>
   );
