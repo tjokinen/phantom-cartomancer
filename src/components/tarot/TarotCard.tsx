@@ -2,7 +2,6 @@
 
 import { TAROT_CARDS } from '@/lib/tarot/cards';
 import Image from 'next/image';
-import { useState } from 'react';
 
 interface TarotCardProps {
   name: string;
@@ -12,7 +11,6 @@ interface TarotCardProps {
 }
 
 export default function TarotCard({ name, position, isRevealed, onClick }: TarotCardProps) {
-  const [imageError, setImageError] = useState(false);
   const cardData = TAROT_CARDS[name];
 
   if (!cardData) {
@@ -45,14 +43,9 @@ export default function TarotCard({ name, position, isRevealed, onClick }: Tarot
             priority
             onError={(e) => {
               console.error(`Failed to load image: ${cardData.image}`);
-              setImageError(true);
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/50" />
-          <div className="absolute bottom-3 left-3 right-3 text-white">
-            <h3 className="text-base mb-0.5">{cardData.name}</h3>
-            <p className="opacity-75 text-[10px]">{cardData.description}</p>
-          </div>
         </div>
         <div className={`
           absolute inset-0
