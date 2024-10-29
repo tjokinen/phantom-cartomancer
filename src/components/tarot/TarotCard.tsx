@@ -26,7 +26,6 @@ export default function TarotCard({ name, position, isRevealed, onClick }: Tarot
         relative w-[160px] h-[280px]
         transition-all duration-700 ease-in-out cursor-pointer
         hover:scale-105
-        ${isRevealed ? 'rotate-0' : 'rotate-180'}
         ${position === 'reversed' && isRevealed ? 'rotate-180' : ''}
       `}
       onClick={onClick}
