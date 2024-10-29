@@ -406,8 +406,8 @@ export default function VoiceInterface({ splineApp, stopIntroAudio }: VoiceInter
 
       {/* Subtitles for AI response */}
       {revealedText && (
-        <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 w-3/4 text-center">
-          <p className="text-purple-200/80 font-serif text-xs">
+        <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 w-3/4 max-h-20 overflow-y-auto bg-black/70 p-2 rounded-md">
+          <p className="text-purple-200/80 font-serif text-xs leading-tight">
             {revealedText}
           </p>
         </div>
