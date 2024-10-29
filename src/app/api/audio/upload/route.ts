@@ -1,6 +1,5 @@
 import { OpenAI } from 'openai';
 import { env } from '@/lib/env';
-import { PHANTOM_CARTOMANCER_PROMPT } from '@/lib/openai';
 import { tarotFunctions } from '@/lib/tarot/functions';
 
 const openai = new OpenAI({
