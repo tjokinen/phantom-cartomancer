@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Phantom Cartomancer
+
+A mystical web application that brings the art of tarot reading into the digital age, featuring a Victorian-era spirit guide powered by AI.
+
+## Features
+
+- **Voice Interaction**: Speak directly with the Phantom Cartomancer through your microphone
+- **Animated 3D Environment**: Immersive mystical atmosphere created with Spline
+- **Tarot Card Readings**: Full major arcana deck with upright and reversed interpretations
+- **Real-time Animations**: Dynamic mouth movements synchronized with AI speech
+- **Responsive Design**: Scales beautifully across different screen sizes
+
+## Technology Stack
+
+- Next.js 15.0.1
+- React 19.0
+- TypeScript
+- Tailwind CSS
+- OpenAI API
+- Spline for 3D graphics
+
+## Core Components
+
+### Voice Interface
+The main interaction point where users can speak with the Cartomancer. Features:
+- Voice recording with visual feedback
+- Real-time audio processing
+- Subtitled AI responses
+- Animated state indicators
+
+### Tarot Cards
+A digital representation of the major arcana, featuring:
+- Smooth reveal animations
+- Upright/reversed positions
+- Interactive card spreads
+
+### AI Integration
+The Phantom Cartomancer's personality and behavior are defined through:
+- Victorian-era character traits
+- Tarot reading expertise
+- Natural language processing
+- Function calling for card interactions
 
 ## Getting Started
 
-First, run the development server:
-
+1. Clone the repository
+2. Install dependencies:
+```bash
+npm install
+```
+3. Set up your environment variables:
+```env
+OPENAI_API_KEY=your_api_key_here
+```
+4. Run the development server:
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `/src/components`: React components for UI elements
+- `/src/lib`: Core utilities and context providers
+- `/public/cards`: Tarot card images and assets
+- `/public/spline`: 3D scene file
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Credits
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 3D Environment: Created with Spline
+- Tarot Card Artwork: Wikimedia Commons, Public Domain
+- Font: Pirata One
+- AI Technology: OpenAI
