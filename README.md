@@ -1,3 +1,5 @@
+<img width="1005" alt="image" src="https://github.com/user-attachments/assets/cf299940-8aa1-449c-8f11-418b88d55dac">
+
 # Phantom Cartomancer
 
 A mystical web application that brings the art of tarot reading into the digital age, featuring a Victorian-era spirit guide powered by AI.
@@ -9,6 +11,8 @@ A mystical web application that brings the art of tarot reading into the digital
 - **Tarot Card Readings**: Full major arcana deck with upright and reversed interpretations
 - **Real-time Animations**: Dynamic mouth movements synchronized with AI speech
 - **Responsive Design**: Scales beautifully across different screen sizes
+
+![image](https://github.com/user-attachments/assets/6b513313-fc40-49d0-8178-d4180bf77b72)
 
 ## Technology Stack
 
