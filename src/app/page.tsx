@@ -13,6 +13,7 @@ export default function Home() {
   function onLoad(spline: Application) {
     setSplineApp(spline);
     spline.setVariable('mouth', 10);
+    spline.setVariable('eyes', 1);
   }
 
   return (

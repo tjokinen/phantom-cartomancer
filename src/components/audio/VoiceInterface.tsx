@@ -10,6 +10,7 @@ interface VoiceInterfaceProps {
 
 export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
   const [isListening, setIsListening] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -37,6 +38,12 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (splineApp) {
+      splineApp.setVariable('eyes', isThinking ? 0.2 : 1);
+    }
+  }, [isThinking, splineApp]);
 
   const updateMouth = (analyser: AnalyserNode) => {
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -103,12 +110,10 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
 
       mediaRecorderRef.current.onstop = async () => {
         try {
+          setIsThinking(true);
           const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
           const formData = new FormData();
           formData.append('audio', audioBlob);
-          
-          // Log messages before sending
-          console.log('Sending messages:', messages);
           formData.append('messages', JSON.stringify(messages));
 
           const response = await fetch('/api/audio/upload', {
@@ -117,7 +122,6 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
           });
 
           const data = await response.json();
-          console.log('Response from server:', data);
 
           if (data.transcription) {
             // Store user's message
@@ -157,9 +161,12 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
             startMouthAnimation(source);
             source.start();
           }
+
+          setIsThinking(false);
         } catch (error) {
           console.error('Detailed error processing audio:', error);
           setError(error instanceof Error ? error.message : 'Unknown error occurred');
+          setIsThinking(false);
         }
       };
 
