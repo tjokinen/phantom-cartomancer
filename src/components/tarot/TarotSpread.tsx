@@ -7,8 +7,16 @@ export default function TarotSpread() {
   const { cards, revealCard } = useTarot();
 
   return (
-    <div className="fixed bottom-32 left-1/2 -translate-x-1/2">
-      <div className="flex gap-4 items-center justify-center">
+    <div className="fixed bottom-44 left-1/2 -translate-x-1/2">
+      <div 
+        className="flex gap-4 items-center justify-center"
+        style={{
+          transform: 'scale(0.8)',
+          transformOrigin: 'center',
+          width: '100vw',
+          overflowX: 'auto'
+        }}
+      >
         {cards.map((card, index) => (
           <div
             key={`${card.name}-${index}`}
