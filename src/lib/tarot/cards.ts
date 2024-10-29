@@ -60,6 +60,11 @@ export const TAROT_CARDS: Record<string, TarotCardData> = {
     image: "/cards/major/wheel-of-fortune.png",
     description: "Good luck, karma, life cycles, destiny, a turning point"
   },
+  "The Wheel of Fortune": {
+    name: "The Wheel of Fortune",
+    image: "/cards/major/wheel-of-fortune.png",
+    description: "Good luck, karma, life cycles, destiny, a turning point"
+  },
   "Justice": {
     name: "Justice",
     image: "/cards/major/justice.png",
