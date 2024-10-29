@@ -249,10 +249,30 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
 
   return (
     <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+      {/* Thinking state overlay */}
+      {isThinking && (
+        <div className="absolute -top-24 left-1/2 transform -translate-x-1/2 w-64 text-center">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="flex space-x-2">
+              <div className="w-2 h-2 bg-purple-400/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 bg-purple-400/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 bg-purple-400/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+            <p className="text-purple-200/80 font-serif text-sm">
+              Divining your message...
+            </p>
+            <p className="text-purple-200/50 text-xs italic">
+              The spirits are contemplating
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="relative">
         <button
           onClick={isListening ? stopListening : startListening}
-          className={`group relative flex flex-col items-center`}
+          className={`group relative flex flex-col items-center ${isThinking ? 'opacity-50 cursor-wait' : ''}`}
+          disabled={isThinking}
         >
           {/* Hover instruction - changes based on listening state */}
           <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 w-48 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
