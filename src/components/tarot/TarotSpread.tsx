@@ -9,7 +9,7 @@ export default function TarotSpread() {
   return (
     <div className="fixed bottom-44 left-1/2 -translate-x-1/2">
       <div 
-        className="flex gap-4 items-center justify-center"
+        className="flex gap-4 items-center justify-center py-2"
         style={{
           transform: 'scale(0.8)',
           transformOrigin: 'center',
