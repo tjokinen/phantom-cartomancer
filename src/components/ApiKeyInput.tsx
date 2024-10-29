@@ -52,9 +52,20 @@ export default function ApiKeyInput() {
             </button>
           </div>
         </form>
-        <p className="mt-4 text-purple-200/50 text-sm text-center">
-          Your API key is stored locally and never saved on our servers. However, it's recommended to create a temporary key and delete it after use for security reasons.
-        </p>
+        <div className="mt-6 space-y-2 text-sm text-purple-200/50">
+          <p className="text-center">
+            ⚠️ Important Security Notice ⚠️
+          </p>
+          <p>
+            Your API key is used only for direct communication with OpenAI and is never stored on our servers. 
+            However, it will be visible in your browser's network requests. For maximum security:
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Use a separate API key with usage limits</li>
+            <li>Rotate your key regularly</li>
+            <li>Monitor your OpenAI usage</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

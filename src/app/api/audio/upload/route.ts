@@ -18,16 +18,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const openai = new OpenAI({
-      apiKey: apiKey,
-    });
+    let openai: OpenAI;
+    try {
+      openai = new OpenAI({
+        apiKey: apiKey,
+      });
+    } catch (error) {
+      return Response.json(
+        { error: 'Invalid API key format' },
+        { status: 401 }
+      );
+    }
 
-    console.log('\n=== Raw Messages JSON ===');
-    console.log('messagesJson:', messagesJson);
+    req.headers.delete('x-api-key');
 
     const messages = messagesJson ? JSON.parse(messagesJson as string) : [];
-    console.log('\n=== Parsed Messages ===');
-    console.log('messages:', JSON.stringify(messages, null, 2));
 
     if (!audioBlob || !(audioBlob instanceof Blob)) {
       return Response.json({ error: 'No audio data provided' }, { status: 400 });
@@ -37,80 +42,77 @@ export async function POST(req: Request) {
       type: 'audio/webm' 
     });
 
-    // Log transcription
-    const transcription = await openai.audio.transcriptions.create({
-      file: audioFile,
-      model: 'whisper-1',
-    });
-    console.log('\n=== New Transcription ===');
-    console.log('User said:', transcription.text);
-
-    // Log full message array being sent to OpenAI
-    const fullMessages = [
-      ...messages,
-      { role: 'user', content: transcription.text }
-    ];
-    console.log('\n=== Sending to OpenAI ===');
-    console.log('Complete message array:', JSON.stringify(fullMessages, null, 2));
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages: fullMessages,
-      functions: tarotFunctions,
-      function_call: 'auto',
-    });
-
-    // Log OpenAI's response
-    console.log('\n=== OpenAI Response ===');
-    console.log('AI response:', JSON.stringify(completion.choices[0], null, 2));
-    console.log('================\n');
-
-    const message = completion.choices[0].message;
-    let spokenResponse = message.content || '';
-    const functionCalls = [];
-
-    // Handle function calls
-    if (message.function_call) {
-      // If it's a single function call
-      functionCalls.push(message.function_call);
-      
-      // Get a follow-up response that includes the interpretation
-      const followUp = await openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          ...messages,
-          { role: 'user', content: transcription.text },
-          message,
-          { 
-            role: 'system', 
-            content: 'Now provide the interpretation of the cards without any function calls.' 
-          }
-        ]
+    try {
+      const transcription = await openai.audio.transcriptions.create({
+        file: audioFile,
+        model: 'whisper-1',
       });
 
-      spokenResponse = followUp.choices[0].message.content || '';
+      const fullMessages = [
+        ...messages,
+        { role: 'user', content: transcription.text }
+      ];
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4-turbo-preview',
+        messages: fullMessages,
+        functions: tarotFunctions,
+        function_call: 'auto',
+      });
+
+      const message = completion.choices[0].message;
+      let spokenResponse = message.content || '';
+      const functionCalls = [];
+
+      // Handle function calls
+      if (message.function_call) {
+        functionCalls.push(message.function_call);
+        
+        const followUp = await openai.chat.completions.create({
+          model: 'gpt-4-turbo-preview',
+          messages: [
+            ...messages,
+            { role: 'user', content: transcription.text },
+            message,
+            { 
+              role: 'system', 
+              content: 'Now provide the interpretation of the cards without any function calls.' 
+            }
+          ]
+        });
+
+        spokenResponse = followUp.choices[0].message.content || '';
+      }
+
+      const speech = await openai.audio.speech.create({
+        model: 'tts-1',
+        voice: 'onyx',
+        input: spokenResponse,
+      });
+
+      const audioBuffer = await speech.arrayBuffer();
+
+      return Response.json({
+        type: 'completion',
+        transcription: transcription.text,
+        response: spokenResponse,
+        functionCalls: functionCalls,
+        audio: Buffer.from(audioBuffer).toString('base64')
+      });
+    } catch (error) {
+      const sanitizedError = error instanceof Error 
+        ? error.message.replace(apiKey, '[REDACTED]')
+        : 'Unknown error';
+      
+      console.error('Processing error:', sanitizedError);
+      return Response.json(
+        { error: 'Processing error occurred' },
+        { status: 500 }
+      );
     }
-
-    // Generate speech from the cleaned response
-    const speech = await openai.audio.speech.create({
-      model: 'tts-1',
-      voice: 'onyx',
-      input: spokenResponse,
-    });
-
-    const audioBuffer = await speech.arrayBuffer();
-
-    return Response.json({
-      type: 'completion',
-      transcription: transcription.text,
-      response: spokenResponse,
-      functionCalls: functionCalls,
-      audio: Buffer.from(audioBuffer).toString('base64')
-    });
   } catch (error) {
-    console.error('Error processing audio:', error);
     return Response.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' }, 
+      { error: 'Request processing failed' },
       { status: 500 }
     );
   }
