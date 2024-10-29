@@ -13,6 +13,7 @@ export default function VoiceInterface({ splineApp, stopIntroAudio }: VoiceInter
   const [isListening, setIsListening] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string>('');
+  const [revealedText, setRevealedText] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -165,7 +166,6 @@ export default function VoiceInterface({ splineApp, stopIntroAudio }: VoiceInter
             startMouthAnimation(source);
             source.start();
           }
-
           setIsThinking(false);
         } catch (error) {
           console.error('Detailed error processing audio:', error);
@@ -250,6 +250,25 @@ export default function VoiceInterface({ splineApp, stopIntroAudio }: VoiceInter
       }
     };
   }, []);
+
+  // Get the latest AI message for subtitles
+  const latestAIMessage = messages.filter(msg => msg.role === 'assistant').slice(-1)[0]?.content;
+
+  // Gradually reveal the AI message
+  useEffect(() => {
+    if (!latestAIMessage) return;
+
+    let index = 0;
+    const interval = setInterval(() => {
+      setRevealedText(latestAIMessage.slice(0, index));
+      index++;
+      if (index > latestAIMessage.length) {
+        clearInterval(interval);
+      }
+    }, 50); // Adjust the speed of text reveal here
+
+    return () => clearInterval(interval);
+  }, [latestAIMessage]);
 
   return (
     <div className="absolute bottom-8 left-0 right-0 flex justify-center">
@@ -384,6 +403,15 @@ export default function VoiceInterface({ splineApp, stopIntroAudio }: VoiceInter
           </div>
         )}
       </div>
+
+      {/* Subtitles for AI response */}
+      {revealedText && (
+        <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 w-3/4 text-center">
+          <p className="text-purple-200/80 font-serif text-xs">
+            {revealedText}
+          </p>
+        </div>
+      )}
     </div>
   );
 } 
