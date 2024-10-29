@@ -6,9 +6,10 @@ import { useTarot } from '@/lib/context/TarotContext';
 
 interface VoiceInterfaceProps {
   splineApp: Application | null;
+  stopIntroAudio?: () => void;
 }
 
-export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
+export default function VoiceInterface({ splineApp, stopIntroAudio }: VoiceInterfaceProps) {
   const [isListening, setIsListening] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string>('');
@@ -81,6 +82,9 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
 
   const startListening = async () => {
     try {
+      // Stop introduction audio if it's playing
+      stopIntroAudio?.();
+
       // Stop any playing audio first
       stopCurrentAudio();
 

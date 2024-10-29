@@ -117,6 +117,19 @@ export default function Home() {
     setSplineApp(spline);
   }
 
+  const stopIntroAudio = useCallback(() => {
+    if (audioElement.current) {
+      audioElement.current.pause();
+      audioElement.current.currentTime = 0;
+    }
+    if (animationFrameId.current) {
+      cancelAnimationFrame(animationFrameId.current);
+    }
+    if (splineApp) {
+      splineApp.setVariable('mouth', 10);
+    }
+  }, [splineApp]);
+
   return (
     <TarotProvider>
       <main className="relative h-screen w-screen overflow-hidden bg-background">
@@ -128,7 +141,7 @@ export default function Home() {
         </div>
 
         <TarotSpread />
-        {!showStartButton && <VoiceInterface splineApp={splineApp} />}
+        {!showStartButton && <VoiceInterface splineApp={splineApp} stopIntroAudio={stopIntroAudio} />}
 
         {/* Centered title with new font */}
         <div className="absolute top-6 left-0 right-0 text-center">
