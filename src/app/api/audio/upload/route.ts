@@ -1,17 +1,33 @@
 import { OpenAI } from 'openai';
+import { env } from '@/lib/env';
 import { PHANTOM_CARTOMANCER_PROMPT } from '@/lib/openai';
 import { tarotFunctions } from '@/lib/tarot/functions';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_API_KEY || '',
 });
 
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
+  if (!env.OPENAI_API_KEY) {
+    return Response.json(
+      { error: 'OpenAI API key not configured' },
+      { status: 500 }
+    );
+  }
+
   try {
     const formData = await req.formData();
     const audioBlob = formData.get('audio');
+    const messagesJson = formData.get('messages');
+
+    console.log('\n=== Raw Messages JSON ===');
+    console.log('messagesJson:', messagesJson);
+
+    const messages = messagesJson ? JSON.parse(messagesJson as string) : [];
+    console.log('\n=== Parsed Messages ===');
+    console.log('messages:', JSON.stringify(messages, null, 2));
 
     if (!audioBlob || !(audioBlob instanceof Blob)) {
       return Response.json({ error: 'No audio data provided' }, { status: 400 });
@@ -21,22 +37,33 @@ export async function POST(req: Request) {
       type: 'audio/webm' 
     });
 
-    // Process with Whisper
+    // Log transcription
     const transcription = await openai.audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
     });
+    console.log('\n=== New Transcription ===');
+    console.log('User said:', transcription.text);
 
-    // Get AI response with function calling
+    // Log full message array being sent to OpenAI
+    const fullMessages = [
+      ...messages,
+      { role: 'user', content: transcription.text }
+    ];
+    console.log('\n=== Sending to OpenAI ===');
+    console.log('Complete message array:', JSON.stringify(fullMessages, null, 2));
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4-turbo-preview',
-      messages: [
-        { role: 'system', content: PHANTOM_CARTOMANCER_PROMPT },
-        { role: 'user', content: transcription.text }
-      ],
+      messages: fullMessages,
       functions: tarotFunctions,
       function_call: 'auto',
     });
+
+    // Log OpenAI's response
+    console.log('\n=== OpenAI Response ===');
+    console.log('AI response:', JSON.stringify(completion.choices[0], null, 2));
+    console.log('================\n');
 
     const message = completion.choices[0].message;
     let spokenResponse = message.content || '';
@@ -51,7 +78,7 @@ export async function POST(req: Request) {
       const followUp = await openai.chat.completions.create({
         model: 'gpt-4-turbo-preview',
         messages: [
-          { role: 'system', content: PHANTOM_CARTOMANCER_PROMPT },
+          ...messages,
           { role: 'user', content: transcription.text },
           message,
           { 

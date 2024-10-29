@@ -16,7 +16,13 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
   const chunksRef = useRef<Blob[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number>();
-  const { addCard, revealCard, clearCards } = useTarot();
+  const { 
+    addCard, 
+    revealCard, 
+    clearCards, 
+    messages,
+    addMessage 
+  } = useTarot();
   const currentAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Initialize AudioContext on component mount
@@ -98,22 +104,40 @@ export default function VoiceInterface({ splineApp }: VoiceInterfaceProps) {
       mediaRecorderRef.current.onstop = async () => {
         try {
           const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-          const audioFile = new File([audioBlob], 'audio.wav', { type: 'audio/webm' });
-          
           const formData = new FormData();
-          formData.append('audio', audioFile);
+          formData.append('audio', audioBlob);
           
+          // Log messages before sending
+          console.log('Sending messages:', messages);
+          formData.append('messages', JSON.stringify(messages));
+
           const response = await fetch('/api/audio/upload', {
             method: 'POST',
             body: formData,
           });
-          
-          if (!response.ok) {
-            throw new Error(`Server error: ${response.statusText}`);
-          }
 
           const data = await response.json();
-          console.log('Server response:', data);
+          console.log('Response from server:', data);
+
+          if (data.transcription) {
+            // Store user's message
+            addMessage({ 
+              role: 'user', 
+              content: data.transcription 
+            });
+          }
+
+          if (data.response) {
+            // Store AI's response
+            addMessage({ 
+              role: 'assistant', 
+              content: data.response,
+              function_call: data.functionCalls?.[0] 
+            });
+          }
+
+          // Log updated messages
+          console.log('Updated messages:', messages);
 
           if (data.functionCalls) {
             handleFunctionCalls(data.functionCalls);

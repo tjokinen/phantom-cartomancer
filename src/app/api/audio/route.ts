@@ -1,13 +1,21 @@
-import { PHANTOM_CARTOMANCER_PROMPT } from '@/lib/openai';
 import { OpenAI } from 'openai';
+import { env } from '@/lib/env';
+import { PHANTOM_CARTOMANCER_PROMPT } from '@/lib/openai';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_API_KEY || '',
 });
 
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
+  if (!env.OPENAI_API_KEY) {
+    return Response.json(
+      { error: 'OpenAI API key not configured' },
+      { status: 500 }
+    );
+  }
+
   const encoder = new TextEncoder();
   const stream = new TransformStream();
   const writer = stream.writable.getWriter();
